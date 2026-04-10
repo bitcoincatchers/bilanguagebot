@@ -1,14 +1,15 @@
 """
-Dual-Language Crypto Telegram Bot v1.1
+Dual-Language Crypto Telegram Bot v1.2
 --------------------------------------
 Flow:
   1. You forward/paste a message to the bot (EN or ES source)
   2. Bot uses Claude to rewrite it in BOTH English and Spanish
   3. Shows side-by-side preview with buttons
   4. On approve -> sends to both channels simultaneously
-  5. Appends CTAs + cross-promotion after each message
+  5. Daily promo sent once per day (no footer on every message)
 """
 import asyncio
+import datetime
 import logging
 import re
 import uuid
@@ -165,11 +166,10 @@ Original message:
             chunks.append(remaining[:limit])
             remaining = remaining[limit:]
         return [c for c in chunks if c.strip()]
-    # --- SEND TO CHANNEL ---
-    async def _send_to_channel(self, bot, channel_id: str, text: str, cta: str,
+    # --- SEND TO CHANNEL (no footer) ---
+    async def _send_to_channel(self, bot, channel_id: str, text: str,
                                 photo_url: Optional[str] = None):
         clean_text = self._remove_external_links(text)
-        full_suffix = cta
         if photo_url:
             try:
                 resp = requests.get(photo_url, timeout=30)
@@ -179,34 +179,33 @@ Original message:
         chunks = self._split_safe(clean_text)
         if not chunks:
             chunks = ["📊"]
-        for i, chunk in enumerate(chunks):
-            is_last = i == len(chunks) - 1
-            if is_last:
-                if len(chunk) + len(full_suffix) <= TG_MSG_LIMIT:
-                    await bot.send_message(
-                        chat_id=channel_id, text=chunk + full_suffix,
-                        disable_web_page_preview=True
-                    )
-                else:
-                    await bot.send_message(
-                        chat_id=channel_id, text=chunk,
-                        disable_web_page_preview=True
-                    )
-                    await bot.send_message(
-                        chat_id=channel_id, text=full_suffix.strip(),
-                        disable_web_page_preview=True
-                    )
-            else:
-                await bot.send_message(
-                    chat_id=channel_id, text=chunk,
-                    disable_web_page_preview=True
-                )
+        for chunk in chunks:
+            await bot.send_message(
+                chat_id=channel_id, text=chunk,
+                disable_web_page_preview=True
+            )
     def _remove_external_links(self, text: str) -> str:
         text = re.sub(r'https?://\S+', '', text)
         text = re.sub(r'www\.\S+', '', text)
         text = re.sub(r' {2,}', ' ', text)
         text = re.sub(r'\n{3,}', '\n\n', text)
         return text.strip()
+    # --- DAILY PROMO ---
+    async def _send_daily_promo(self, context: ContextTypes.DEFAULT_TYPE):
+        """Send promo message to both channels once per day."""
+        bot = context.bot
+        try:
+            await bot.send_message(
+                chat_id=CHANNEL_ES, text=PROMO_ES,
+                disable_web_page_preview=True
+            )
+            await bot.send_message(
+                chat_id=CHANNEL_EN, text=PROMO_EN,
+                disable_web_page_preview=True
+            )
+            logger.info("✅ Daily promo sent to both channels")
+        except Exception as e:
+            logger.error(f"❌ Daily promo failed: {e}")
     # --- PREVIEW CLEANUP ---
     def _record_preview(self, user_id: int, chat_id: int, msg_id: int):
         self.preview_msgs.setdefault(user_id, []).append((chat_id, msg_id))
@@ -235,6 +234,13 @@ Original message:
             f"🇪🇸 Spanish: {CHANNEL_ES}\n"
             f"🇬🇧 English: {CHANNEL_EN}"
         )
+    async def cmd_promo(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Manually trigger the daily promo."""
+        user_id = update.effective_user.id
+        if ALLOWED_USER_ID != 0 and user_id != ALLOWED_USER_ID:
+            return
+        await self._send_daily_promo(context)
+        await update.message.reply_text("✅ Promo sent to both channels!")
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         user_id = update.effective_user.id
         if update.effective_chat.type != "private":
@@ -359,11 +365,11 @@ Original message:
             await query.edit_message_text("📤 Sending to both channels...")
             try:
                 await self._send_to_channel(
-                    bot, CHANNEL_EN, pending["en"], CTA_EN,
+                    bot, CHANNEL_EN, pending["en"],
                     pending.get("photo_url")
                 )
                 await self._send_to_channel(
-                    bot, CHANNEL_ES, pending["es"], CTA_ES,
+                    bot, CHANNEL_ES, pending["es"],
                     pending.get("photo_url")
                 )
                 await self._cleanup_previews(bot, user_id)
@@ -379,7 +385,7 @@ Original message:
             await query.edit_message_text("📤 Sending to English channel...")
             try:
                 await self._send_to_channel(
-                    bot, CHANNEL_EN, pending["en"], CTA_EN,
+                    bot, CHANNEL_EN, pending["en"],
                     pending.get("photo_url")
                 )
                 await self._cleanup_previews(bot, user_id)
@@ -391,7 +397,7 @@ Original message:
             await query.edit_message_text("📤 Sending to Spanish channel...")
             try:
                 await self._send_to_channel(
-                    bot, CHANNEL_ES, pending["es"], CTA_ES,
+                    bot, CHANNEL_ES, pending["es"],
                     pending.get("photo_url")
                 )
                 await self._cleanup_previews(bot, user_id)
@@ -471,6 +477,7 @@ Original message:
         app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
         app.add_handler(CommandHandler("start", self.cmd_start))
         app.add_handler(CommandHandler("channels", self.cmd_channels))
+        app.add_handler(CommandHandler("promo", self.cmd_promo))
         app.add_handler(CallbackQueryHandler(self.button_callback))
         app.add_handler(MessageHandler(
             filters.PHOTO & filters.ChatType.PRIVATE,
@@ -491,10 +498,14 @@ Original message:
             filters.FORWARDED & filters.ChatType.PRIVATE,
             self.handle_message
         ))
+        # Schedule daily promo
+        promo_time = datetime.time(hour=PROMO_HOUR_UTC, minute=0, tzinfo=datetime.timezone.utc)
+        app.job_queue.run_daily(self._send_daily_promo, time=promo_time)
         logger.info(f"🤖 Dual-Lang Bot started")
         logger.info(f"🇪🇸 ES channel: {CHANNEL_ES}")
         logger.info(f"🇬🇧 EN channel: {CHANNEL_EN}")
         logger.info(f"👤 Allowed user: {ALLOWED_USER_ID}")
+        logger.info(f"📢 Daily promo scheduled at {PROMO_HOUR_UTC}:00 UTC")
         app.run_polling(drop_pending_updates=True)
 if __name__ == "__main__":
     bot = DualLangBot()
