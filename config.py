@@ -16,24 +16,29 @@ CHANNEL_EN = os.getenv('CHANNEL_EN', '@signalsaicrypto')
 ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
 CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
 
-# Daily promo message (sent once per day, NOT on every message)
-PROMO_ES = (
-    "🎁 1000$ GRATIS con BITMART: https://crypto-signals.app/bitmart-bonus\n"
-    "💸 300$ GRATIS con BINGX: https://crypto-signals.app/bingx-bonus\n"
-    "🤖 Señales con IA: crypto-signals.app\n\n"
+# Footer — appended after every translation
+CTA_ES = (
+    "\n\n"
+    "🤖 Prueba nuestros bots de trading automatizado: https://atomated-trade-zen.lovable.app\n"
+    "💬 Escríbeme para la contraseña: @alexworksout\n\n"
     "🇬🇧 English Group: @signalsaicrypto"
 )
 
-PROMO_EN = (
-    "🎁 $1000 FREE with BITMART: https://crypto-signals.app/bitmart-bonus\n"
-    "💸 $300 FREE with BINGX: https://crypto-signals.app/bingx-bonus\n"
-    "🤖 AI Trading Signals: crypto-signals.app\n\n"
+CTA_EN = (
+    "\n\n"
+    "🤖 Try our automated trading bots: https://atomated-trade-zen.lovable.app\n"
+    "💬 Text me for the password: @alexworksout\n\n"
     "🇪🇸 Grupo en Español: @cryptosignalapp"
 )
 
-# Hour (UTC) to send daily promo. Madrid is UTC+2, so 10 UTC = 12pm Madrid
-PROMO_HOUR_UTC = int(os.getenv('PROMO_HOUR_UTC', '10'))
+# Daily promo — DISABLED
+PROMO_ES = ""
+PROMO_EN = ""
+DAILY_PROMO_ENABLED = False
 
 # Telegram message limit
 TG_MSG_LIMIT = 4096
 TG_SAFE_LIMIT = 3900
+
+# Daily promo hour (UTC) — kept for import compatibility, scheduler is disabled
+PROMO_HOUR_UTC = 10

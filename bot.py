@@ -500,7 +500,7 @@ Original message:
         ))
         # Schedule daily promo
         promo_time = datetime.time(hour=PROMO_HOUR_UTC, minute=0, tzinfo=datetime.timezone.utc)
-        app.job_queue.run_daily(self._send_daily_promo, time=promo_time)
+        # DISABLED: app.job_queue.run_daily(self._send_daily_promo, time=promo_time)
         logger.info(f"🤖 Dual-Lang Bot started")
         logger.info(f"🇪🇸 ES channel: {CHANNEL_ES}")
         logger.info(f"🇬🇧 EN channel: {CHANNEL_EN}")
