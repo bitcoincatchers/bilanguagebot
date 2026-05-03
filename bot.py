@@ -1,3 +1,6 @@
+
+Copiar
+
 """
 Dual-Language Crypto Telegram Bot v1.2
 --------------------------------------
@@ -40,7 +43,7 @@ class DualLangBot:
     # --- REWRITE ---
     def _rewrite(self, text: str) -> dict:
         prompt = f"""You MUST produce TWO versions of the message below — English and Spanish.
-
+ 
 CRITICAL RULES:
 1. Keep it SHORT and proportional to the input. If the input is 1-2 lines, output 3-5 lines MAX per language. Do NOT write essays from short inputs.
 2. Lightly reword the message — same meaning, same tone, same structure. Just clean it up. Do NOT invent new content, metaphors, or dramatic narratives.
@@ -53,20 +56,20 @@ CRITICAL RULES:
 6. Use a few emojis but don't overdo it.
 7. Keep crypto jargon in English in both versions (bullish, bearish, ATH, RSI, etc.)
 8. NEVER use markdown like **bold** or *italic*. Use CAPS or emojis for emphasis.
-9. Do NOT add links, CTAs, promotional content, philosophical questions, dramatic intros, or motivational speeches.
-
+9. Do NOT add NEW links, CTAs, promotional content, philosophical questions, dramatic intros, or motivational speeches. BUT IF the original message contains links (https://, http://, t.me/, @handles), KEEP THEM EXACTLY as written in BOTH versions. Never strip links from the input.
+ 
 LENGTH GUIDE:
 - Input 1-5 words → 2-4 lines per language
 - Input 1-2 sentences → 3-6 lines per language
 - Input a paragraph → similar length per language
 - Input multi-section → keep sections, reword concisely
-
+ 
 OUTPUT FORMAT — Use this exact format:
 ===EN===
 [English version]
 ===ES===
 [Spanish version — ALL IN SPANISH]
-
+ 
 Original message:
 {text}"""
         try:
@@ -104,7 +107,7 @@ RULES:
 1. If the original is in English, translate to Spanish. If in Spanish, translate to English. If mixed, provide both clean versions.
 2. Keep ALL numbers, prices, ticker symbols, and crypto jargon exactly as-is.
 3. The translation should be natural and fluent, not robotic.
-4. Do NOT add anything — no links, CTAs, extra commentary, or emojis that weren't in the original.
+4. Do NOT add anything that wasn't in the original — no extra commentary or emojis. BUT IF the original contains links (https://, http://, t.me/, @handles), KEEP THEM EXACTLY in both languages. Never strip input links.
 5. Do NOT use markdown formatting. Keep it plain text.
 OUTPUT FORMAT (strict):
 ===EN===
@@ -169,7 +172,12 @@ Original message:
     # --- SEND TO CHANNEL (no footer) ---
     async def _send_to_channel(self, bot, channel_id: str, text: str,
                                 photo_url: Optional[str] = None):
-        clean_text = self._remove_external_links(text)
+        # v1.3 (May 2026): links are now PRESERVED in published messages.
+        # Previously _remove_external_links() stripped every URL/www. — that
+        # was a guard against unwanted promo links during a different content
+        # phase. We now want links (e.g. exchange referrals, landing pages)
+        # to survive the rewrite and reach both channels intact.
+        clean_text = text
         if photo_url:
             try:
                 resp = requests.get(photo_url, timeout=30)
@@ -185,6 +193,8 @@ Original message:
                 disable_web_page_preview=True
             )
     def _remove_external_links(self, text: str) -> str:
+        # KEPT for backward compatibility / manual use only.
+        # No longer called from _send_to_channel as of v1.3.
         text = re.sub(r'https?://\S+', '', text)
         text = re.sub(r'www\.\S+', '', text)
         text = re.sub(r' {2,}', ' ', text)
