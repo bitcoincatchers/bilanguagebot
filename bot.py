@@ -1,6 +1,3 @@
-
-Copiar
-
 """
 Dual-Language Crypto Telegram Bot v1.2
 --------------------------------------
