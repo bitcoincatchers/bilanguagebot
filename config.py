@@ -19,15 +19,13 @@ CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
 # Footer — appended after every translation
 CTA_ES = (
     "\n\n"
-    "🤖 Prueba nuestros bots de trading automatizado: https://atomated-trade-zen.lovable.app\n"
-    "💬 Escríbeme para la contraseña: @alexworksout\n\n"
+    "🚀 Prueba Crypto Signals gratis: https://crypto-signals.app\n\n"
     "🇬🇧 English Group: @signalsaicrypto"
 )
 
 CTA_EN = (
     "\n\n"
-    "🤖 Try our automated trading bots: https://atomated-trade-zen.lovable.app\n"
-    "💬 Text me for the password: @alexworksout\n\n"
+    "🚀 Try Crypto Signals free: https://crypto-signals.app\n\n"
     "🇪🇸 Grupo en Español: @cryptosignalapp"
 )
 

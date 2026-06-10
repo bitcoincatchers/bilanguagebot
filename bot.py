@@ -175,6 +175,11 @@ Original message:
         # phase. We now want links (e.g. exchange referrals, landing pages)
         # to survive the rewrite and reach both channels intact.
         clean_text = text
+        # v1.4 (2026-06-10): append the Crypto Signals CTA to every published
+        # message, language-matched to the channel. Values live in config.py.
+        _cta = CTA_ES if channel_id == CHANNEL_ES else CTA_EN
+        if _cta and _cta.strip() and _cta.strip() not in clean_text:
+            clean_text = clean_text.rstrip() + _cta
         if photo_url:
             try:
                 resp = requests.get(photo_url, timeout=30)
