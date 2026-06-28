@@ -14,7 +14,11 @@ CHANNEL_EN = os.getenv('CHANNEL_EN', '@signalsaicrypto')
 
 # Anthropic
 ANTHROPIC_API_KEY = os.environ['ANTHROPIC_API_KEY']
-CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+# claude-sonnet-4-20250514 reached end-of-life 2026-06-15 and now returns 404,
+# which made the bot silently echo the original text untranslated. Haiku 4.5 is
+# cheap + fast and ideal for short-message translation. Bump to claude-sonnet-4-6
+# for higher polish. Use the bare alias (no date suffix).
+CLAUDE_MODEL = os.getenv('CLAUDE_MODEL', 'claude-haiku-4-5')
 
 # Footer — appended after every translation
 CTA_ES = (
